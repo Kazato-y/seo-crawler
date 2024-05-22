@@ -38,6 +38,7 @@ const DomainList = () => {
                     </ListItem>
                 ))}
             </List>
+            <Link to="/login">Back to Login</Link>
         </Container>
     );
 };

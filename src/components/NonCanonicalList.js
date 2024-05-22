@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { Container, Table, Input } from './styles/ListStyles';
 import InternalLinksList from './InternalLinksList';
 
@@ -8,6 +8,7 @@ const NonCanonicalList = () => {
     const [urls, setUrls] = useState([]);
     const [search, setSearch] = useState('');
     const [selectedUrl, setSelectedUrl] = useState(null);
+    const [sortConfig, setSortConfig] = useState({ key: 'url', direction: 'ascending' });
 
     useEffect(() => {
         // ここでAPI呼び出しをして、domainIdに基づいてURLデータを取得します
@@ -26,6 +27,24 @@ const NonCanonicalList = () => {
             url.includes(search) || canonical.includes(search) || title.includes(search)
     );
 
+    const sortedUrls = [...filteredUrls].sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+            return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+            return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+    });
+
+    const requestSort = (key) => {
+        let direction = 'ascending';
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setSortConfig({ key, direction });
+    };
+
     return (
         <Container>
             <h2>Non-Canonical URLs for Domain {domainId}</h2>
@@ -38,13 +57,25 @@ const NonCanonicalList = () => {
             <Table>
                 <thead>
                     <tr>
-                        <th>URL</th>
-                        <th>Canonical</th>
-                        <th>Title</th>
+                        <th>
+                            <button type="button" onClick={() => requestSort('url')}>
+                                URL
+                            </button>
+                        </th>
+                        <th>
+                            <button type="button" onClick={() => requestSort('canonical')}>
+                                Canonical
+                            </button>
+                        </th>
+                        <th>
+                            <button type="button" onClick={() => requestSort('title')}>
+                                Title
+                            </button>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
-                    {filteredUrls.map(({ url, canonical, title }) => (
+                    {sortedUrls.map(({ url, canonical, title }) => (
                         <React.Fragment key={url}>
                             <tr>
                                 <td>{url}</td>
@@ -62,6 +93,7 @@ const NonCanonicalList = () => {
                     ))}
                 </tbody>
             </Table>
+            <Link to={`/domains/${domainId}`}>Back to Domain Details</Link>
         </Container>
     );
 };

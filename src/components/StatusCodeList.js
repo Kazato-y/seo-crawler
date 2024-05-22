@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { Container, Table, Input } from './styles/ListStyles';
 import InternalLinksList from './InternalLinksList';
 
@@ -8,6 +8,7 @@ const StatusCodeList = () => {
     const [urls, setUrls] = useState([]);
     const [search, setSearch] = useState('');
     const [selectedUrl, setSelectedUrl] = useState(null);
+    const [sortConfig, setSortConfig] = useState({ key: 'url', direction: 'ascending' });
 
     useEffect(() => {
         // ここでAPI呼び出しをして、domainIdに基づいてURLデータを取得します
@@ -26,6 +27,24 @@ const StatusCodeList = () => {
             url.includes(search) || title.includes(search) || statusCode.toString().includes(search)
     );
 
+    const sortedUrls = [...filteredUrls].sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+            return sortConfig.direction === 'ascending' ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+            return sortConfig.direction === 'ascending' ? 1 : -1;
+        }
+        return 0;
+    });
+
+    const requestSort = (key) => {
+        let direction = 'ascending';
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setSortConfig({ key, direction });
+    };
+
     return (
         <Container>
             <h2>HTTP Status Codes for Domain {domainId}</h2>
@@ -38,13 +57,25 @@ const StatusCodeList = () => {
             <Table>
                 <thead>
                     <tr>
-                        <th>URL</th>
-                        <th>Status Code</th>
-                        <th>Title</th>
+                        <th>
+                            <button type="button" onClick={() => requestSort('url')}>
+                                URL
+                            </button>
+                        </th>
+                        <th>
+                            <button type="button" onClick={() => requestSort('statusCode')}>
+                                Status Code
+                            </button>
+                        </th>
+                        <th>
+                            <button type="button" onClick={() => requestSort('title')}>
+                                Title
+                            </button>
+                        </th>
                     </tr>
                 </thead>
                 <tbody>
-                    {filteredUrls.map(({ url, statusCode, title }) => (
+                    {sortedUrls.map(({ url, statusCode, title }) => (
                         <React.Fragment key={url}>
                             <tr>
                                 <td>{url}</td>
@@ -62,6 +93,7 @@ const StatusCodeList = () => {
                     ))}
                 </tbody>
             </Table>
+            <Link to={`/domains/${domainId}`}>Back to Domain Details</Link>
         </Container>
     );
 };
