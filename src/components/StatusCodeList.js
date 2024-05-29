@@ -1,30 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Container, Table, Input } from './styles/ListStyles';
-import InternalLinksList from './InternalLinksList';
+import { getStatusCodeUrls, getInternalLinks } from '../services/api';
 
 const StatusCodeList = () => {
     const { domainId } = useParams();
     const [urls, setUrls] = useState([]);
     const [search, setSearch] = useState('');
     const [selectedUrl, setSelectedUrl] = useState(null);
+    const [internalLinks, setInternalLinks] = useState([]);
     const [sortConfig, setSortConfig] = useState({ key: 'url', direction: 'ascending' });
 
     useEffect(() => {
-        // ここでAPI呼び出しをして、domainIdに基づいてURLデータを取得します
-        // ダミーデータを使用
-        const data = [
-            { url: 'https://example.com/page1', statusCode: 200, title: 'Page 1' },
-            { url: 'https://example.com/page2', statusCode: 404, title: 'Page 2' },
-            { url: 'https://example.com/page3', statusCode: 500, title: 'Page 3' },
-        ];
+        const fetchData = async () => {
+            const data = await getStatusCodeUrls(domainId);
+            setUrls(data);
+        };
 
-        setUrls(data);
+        fetchData();
     }, [domainId]);
 
     const filteredUrls = urls.filter(
-        ({ url, statusCode, title }) =>
-            url.includes(search) || title.includes(search) || statusCode.toString().includes(search)
+        ({ url, http_status_code, title }) =>
+            url.includes(search) || title.includes(search) || http_status_code.toString().includes(search)
     );
 
     const sortedUrls = [...filteredUrls].sort((a, b) => {
@@ -45,9 +43,20 @@ const StatusCodeList = () => {
         setSortConfig({ key, direction });
     };
 
+    const handleStatusCodeClick = async (urlId) => {
+        if (selectedUrl === urlId) {
+            setSelectedUrl(null);
+            setInternalLinks([]);
+        } else {
+            setSelectedUrl(urlId);
+            const links = await getInternalLinks(urlId);
+            setInternalLinks(links);
+        }
+    };
+
     return (
         <Container>
-            <h2>HTTP Status Codes for Domain {domainId}</h2>
+            <h2>HTTP Status Codes</h2>
             <Input
                 type="text"
                 placeholder="Search by URL, Title, Status Code"
@@ -63,7 +72,7 @@ const StatusCodeList = () => {
                             </button>
                         </th>
                         <th>
-                            <button type="button" onClick={() => requestSort('statusCode')}>
+                            <button type="button" onClick={() => requestSort('http_status_code')}>
                                 Status Code
                             </button>
                         </th>
@@ -75,17 +84,25 @@ const StatusCodeList = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    {sortedUrls.map(({ url, statusCode, title }) => (
+                    {sortedUrls.map(({ url, http_status_code, title, url_id }) => (
                         <React.Fragment key={url}>
                             <tr>
-                                <td>{url}</td>
-                                <td><button onClick={() => setSelectedUrl(url)}>{statusCode}</button></td>
+                                <td>
+                                    <a href={url} target="_blank" rel="noopener noreferrer">{url}</a>
+                                </td>
+                                <td>
+                                    <button onClick={() => handleStatusCodeClick(url_id)}>{http_status_code}</button>
+                                </td>
                                 <td>{title}</td>
                             </tr>
-                            {selectedUrl === url && (
+                            {selectedUrl === url_id && (
                                 <tr>
                                     <td colSpan="3">
-                                        <InternalLinksList url={url} />
+                                        <ul>
+                                            {internalLinks.map((link, index) => (
+                                                <li key={index}>{link}</li>
+                                            ))}
+                                        </ul>
                                     </td>
                                 </tr>
                             )}

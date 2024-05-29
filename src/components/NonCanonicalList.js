@@ -2,24 +2,30 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Container, Table, Input } from './styles/ListStyles';
 import InternalLinksList from './InternalLinksList';
+import { getNonCanonicalUrls, getDomainDetails } from '../services/api';
 
 const NonCanonicalList = () => {
     const { domainId } = useParams();
+    const [domainUrl, setDomainUrl] = useState('');
     const [urls, setUrls] = useState([]);
     const [search, setSearch] = useState('');
     const [selectedUrl, setSelectedUrl] = useState(null);
     const [sortConfig, setSortConfig] = useState({ key: 'url', direction: 'ascending' });
 
     useEffect(() => {
-        // ここでAPI呼び出しをして、domainIdに基づいてURLデータを取得します
-        // ダミーデータを使用
-        const data = [
-            { url: 'https://example.com/page1', canonical: 'https://other.com', title: 'Page 1' },
-            { url: 'https://example.com/page2', canonical: 'https://example.com/page2', title: 'Page 2' },
-            { url: 'https://example.com/page3', canonical: 'https://other.com/page3', title: 'Page 3' },
-        ];
+        const fetchDomainDetails = async () => {
+            const data = await getDomainDetails(domainId);
+            setDomainUrl(data.url);
+        };
 
-        setUrls(data);
+        const fetchData = async () => {
+            const data = await getNonCanonicalUrls(domainId);
+            const nonCanonicalUrls = data.filter(url => url.canonical && url.canonical !== url.url);
+            setUrls(nonCanonicalUrls);
+        };
+
+        fetchDomainDetails();
+        fetchData();
     }, [domainId]);
 
     const filteredUrls = urls.filter(
@@ -45,9 +51,17 @@ const NonCanonicalList = () => {
         setSortConfig({ key, direction });
     };
 
+    const handleCanonicalClick = async (urlId) => {
+        if (selectedUrl === urlId) {
+            setSelectedUrl(null);
+        } else {
+            setSelectedUrl(urlId);
+        }
+    };
+
     return (
         <Container>
-            <h2>Non-Canonical URLs for Domain {domainId}</h2>
+            <h2>Non-Canonical URLs for Domain {domainUrl}</h2>
             <Input
                 type="text"
                 placeholder="Search by URL, Canonical, Title"
@@ -75,17 +89,21 @@ const NonCanonicalList = () => {
                     </tr>
                 </thead>
                 <tbody>
-                    {sortedUrls.map(({ url, canonical, title }) => (
+                    {sortedUrls.map(({ url, canonical, title, url_id }) => (
                         <React.Fragment key={url}>
                             <tr>
                                 <td>{url}</td>
-                                <td><button onClick={() => setSelectedUrl(url)}>{canonical}</button></td>
+                                <td>
+                                    <button onClick={() => handleCanonicalClick(url_id)}>
+                                        {canonical}
+                                    </button>
+                                </td>
                                 <td>{title}</td>
                             </tr>
-                            {selectedUrl === url && (
+                            {selectedUrl === url_id && (
                                 <tr>
                                     <td colSpan="3">
-                                        <InternalLinksList url={url} />
+                                        <InternalLinksList urlId={url_id} />
                                     </td>
                                 </tr>
                             )}

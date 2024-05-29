@@ -1,29 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { List, ListItem, Button, ToggleContainer } from './styles/ListStyles';
+import { getInternalLinks } from '../services/api';
 
-const InternalLinksList = ({ url }) => {
+const InternalLinksList = ({ urlId }) => {
     const [internalLinks, setInternalLinks] = useState([]);
     const [showLinks, setShowLinks] = useState(false);
 
     useEffect(() => {
-        // ここでAPI呼び出しをして、内部リンクデータを取得します
-        // ダミーデータを使用
-        const data = {
-            'https://example.com/page1': [
-                'https://example.com',
-                'https://example.com/page2',
-            ],
-            'https://example.com/page2': [
-                'https://example.com',
-            ],
-            'https://example.com/page3': [
-                'https://example.com',
-                'https://example.com/page1',
-            ],
+        const fetchData = async () => {
+            const data = await getInternalLinks(urlId);
+            setInternalLinks(data);
         };
 
-        setInternalLinks(data[url] || []);
-    }, [url]);
+        fetchData();
+    }, [urlId]);
 
     return (
         <ToggleContainer>
